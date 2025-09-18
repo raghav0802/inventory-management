@@ -1,11 +1,15 @@
 package com.example.inventory.service;
 
+import com.example.inventory.dto.ProductDto;
+import com.example.inventory.mapper.ProductMapper;
 import com.example.inventory.model.Product;
 import com.example.inventory.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -16,39 +20,55 @@ public class ProductService {
     }
 
     // Get all products
-    public List<Product> getAll() {
-        return repo.findAll();
+    public List<ProductDto> getAllProducts() {
+        return repo.findAll()
+                .stream()
+                .map(ProductMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     // Get single product
-    public Optional<Product> getById(String id) {
-        return repo.findById(id);
+    public Optional<ProductDto> getProductById(String id) {
+        return repo.findById(id).map(ProductMapper::toDto);
     }
 
     // Add new product
-    public Product create(Product product) {
-        product.setCreatedAt(LocalDate.now());
-        product.setUpdatedAt(LocalDate.now());
-        return repo.save(product);
+
+    public ProductDto createProduct(ProductDto productDto) {
+        Product product = ProductMapper.toEntity(productDto);
+        product.setCreatedAt(LocalDate.from(LocalDateTime.now()));
+        product.setUpdatedAt(LocalDate.from(LocalDateTime.now()));
+
+        Product saved = repo.save(product);
+        return ProductMapper.toDto(saved);
     }
 
     // Update product
-    public Product update(String id, Product updated) {
-        return repo.findById(id).map(existing -> {
-            existing.setName(updated.getName());
-            existing.setDescription(updated.getDescription());
-            existing.setCategory(updated.getCategory());
-            existing.setPrice(updated.getPrice());
-            existing.setQuantity(updated.getQuantity());
-            existing.setSupplierId(updated.getSupplierId());
-            existing.setExpiryDate(updated.getExpiryDate());
-            existing.setUpdatedAt(LocalDate.now());
-            return repo.save(existing);
-        }).orElseThrow(() -> new RuntimeException("Product not found"));
-    }
 
+    public Optional<ProductDto> updateProduct(String id, ProductDto productDto) {
+        return repo.findById(id).map(existing -> {
+            existing.setName(productDto.getName());
+            existing.setDescription(productDto.getDescription());
+            existing.setCategory(productDto.getCategory());
+            existing.setSku(productDto.getSku());
+            existing.setPrice(productDto.getPrice());
+            existing.setQuantity(productDto.getQuantity());
+            existing.setSupplierId(productDto.getSupplierId());
+            existing.setUpdatedAt(LocalDate.from(LocalDateTime.now()));
+
+            Product updated = repo.save(existing);
+            return ProductMapper.toDto(updated);
+        });
+    }
     // Delete product
-    public void delete(String id) {
-        repo.deleteById(id);
+    public boolean deleteProduct(String id) {
+        if (repo.existsById(id)) {
+            repo.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+    public Optional<ProductDto> getProductBySku(String sku) {
+        return repo.findBySku(sku).map(ProductMapper::toDto);
     }
 }

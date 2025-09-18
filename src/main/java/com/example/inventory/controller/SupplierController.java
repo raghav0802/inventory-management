@@ -1,7 +1,9 @@
 package com.example.inventory.controller;
 
+import com.example.inventory.dto.SupplierDto;
 import com.example.inventory.model.Supplier;
 import com.example.inventory.service.SupplierService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -15,27 +17,40 @@ public class SupplierController {
     }
 
     @GetMapping
-    public List<Supplier> getSuppliers() {
-        return service.getAll();
+    public ResponseEntity<List<SupplierDto>> getAllSuppliers() {
+        return ResponseEntity.ok(service.getAllSuppliers());
     }
 
     @GetMapping("/{id}")
-    public Supplier getSupplier(@PathVariable String id) {
-        return service.getById(id).orElseThrow(() -> new RuntimeException("Supplier not found"));
+    public ResponseEntity<SupplierDto> getSupplierById(@PathVariable String id) {
+        return service.getSupplierById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/company/{companyName}")
+    public ResponseEntity<SupplierDto> getSupplierByCompanyName(@PathVariable String companyName) {
+        return service.getSupplierByCompanyName(companyName)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Supplier addSupplier(@RequestBody Supplier supplier) {
-        return service.create(supplier);
+    public ResponseEntity<SupplierDto> createSupplier(@RequestBody SupplierDto dto) {
+        return ResponseEntity.ok(service.createSupplier(dto));
     }
 
     @PutMapping("/{id}")
-    public Supplier updateSupplier(@PathVariable String id, @RequestBody Supplier supplier) {
-        return service.update(id, supplier);
+    public ResponseEntity<SupplierDto> updateSupplier(@PathVariable String id, @RequestBody SupplierDto dto) {
+        return service.updateSupplier(id, dto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public void deleteSupplier(@PathVariable String id) {
-        service.delete(id);
+    public ResponseEntity<Void> deleteSupplier(@PathVariable String id) {
+        return service.deleteSupplier(id)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }

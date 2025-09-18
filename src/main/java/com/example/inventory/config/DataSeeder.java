@@ -2,6 +2,7 @@ package com.example.inventory.config;
 
 import com.example.inventory.model.*;
 import com.example.inventory.repository.*;
+import com.example.inventory.util.PasswordUtil;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
@@ -78,7 +79,7 @@ public class DataSeeder implements CommandLineRunner {
         // Seed a default User
         User admin = User.builder()
                 .username("admin")
-                .password("admin123") // ⚠️ plain text for now, later we can hash
+                .password(PasswordUtil.hashPassword("admin123")) // ⚡ hashed password
                 .role("ADMIN")
                 .fullName("System Admin")
                 .createdAt(LocalDate.now())

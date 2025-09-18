@@ -1,11 +1,15 @@
 package com.example.inventory.service;
 
+import com.example.inventory.dto.SupplierDto;
+import com.example.inventory.mapper.SupplierMapper;
 import com.example.inventory.model.Supplier;
 import com.example.inventory.repository.SupplierRepository;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class SupplierService {
@@ -15,31 +19,50 @@ public class SupplierService {
         this.repo = repo;
     }
 
-    public List<Supplier> getAll() {
-        return repo.findAll();
+
+    public List<SupplierDto> getAllSuppliers() {
+        return repo.findAll()
+                .stream()
+                .map(SupplierMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-    public Optional<Supplier> getById(String id) {
-        return repo.findById(id);
+    public Optional<SupplierDto> getSupplierById(String id) {
+        return repo.findById(id).map(SupplierMapper::toDto);
     }
 
-    public Supplier create(Supplier supplier) {
-        supplier.setCreatedAt(LocalDate.now());
-        return repo.save(supplier);
+    public Optional<SupplierDto> getSupplierByCompanyName(String companyName) {
+        return repo.findByCompanyName(companyName).map(SupplierMapper::toDto);
     }
 
-    public Supplier update(String id, Supplier updated) {
+    public SupplierDto createSupplier(SupplierDto dto) {
+        Supplier supplier = SupplierMapper.toEntity(dto);
+        supplier.setCreatedAt(LocalDate.from(LocalDateTime.now()));
+
+
+        Supplier saved = repo.save(supplier);
+        return SupplierMapper.toDto(saved);
+    }
+
+    public Optional<SupplierDto> updateSupplier(String id, SupplierDto dto) {
         return repo.findById(id).map(existing -> {
-            existing.setCompanyName(updated.getCompanyName());
-            existing.setContactPerson(updated.getContactPerson());
-            existing.setEmail(updated.getEmail());
-            existing.setPhone(updated.getPhone());
-            existing.setAddress(updated.getAddress());
-            return repo.save(existing);
-        }).orElseThrow(() -> new RuntimeException("Supplier not found"));
+            existing.setCompanyName(dto.getCompanyName());
+            existing.setContactPerson(dto.getContactPerson());
+            existing.setEmail(dto.getEmail());
+            existing.setPhone(dto.getPhone());
+            existing.setAddress(dto.getAddress());
+
+
+            Supplier updated = repo.save(existing);
+            return SupplierMapper.toDto(updated);
+        });
     }
 
-    public void delete(String id) {
-        repo.deleteById(id);
+    public boolean deleteSupplier(String id) {
+        if (repo.existsById(id)) {
+            repo.deleteById(id);
+            return true;
+        }
+        return false;
     }
 }
