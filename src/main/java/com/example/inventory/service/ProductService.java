@@ -35,9 +35,13 @@ public class ProductService {
     // Add new product
 
     public ProductDto createProduct(ProductDto productDto) {
+
+
         Product product = ProductMapper.toEntity(productDto);
-        product.setCreatedAt(LocalDate.from(LocalDateTime.now()));
-        product.setUpdatedAt(LocalDate.from(LocalDateTime.now()));
+
+        LocalDateTime now = LocalDateTime.now();
+        product.setCreatedAt(now);
+        product.setUpdatedAt(now);
 
         Product saved = repo.save(product);
         return ProductMapper.toDto(saved);
@@ -54,8 +58,7 @@ public class ProductService {
             existing.setPrice(productDto.getPrice());
             existing.setQuantity(productDto.getQuantity());
             existing.setSupplierId(productDto.getSupplierId());
-            existing.setUpdatedAt(LocalDate.from(LocalDateTime.now()));
-
+            existing.setUpdatedAt(LocalDateTime.now());
             Product updated = repo.save(existing);
             return ProductMapper.toDto(updated);
         });

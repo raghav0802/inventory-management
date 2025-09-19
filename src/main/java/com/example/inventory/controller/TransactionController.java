@@ -1,6 +1,7 @@
 package com.example.inventory.controller;
 
 import com.example.inventory.dto.TransactionDto;
+import com.example.inventory.dto.TransactionRequest;
 import com.example.inventory.model.Transaction;
 import com.example.inventory.service.TransactionService;
 import org.springframework.http.ResponseEntity;
@@ -45,25 +46,36 @@ public class TransactionController {
 
 
     @PostMapping("/in")
-    public ResponseEntity<TransactionDto> stockIn(
-            @RequestParam String productId,
-            @RequestParam int qty,
-            @RequestParam(required = false) String ref,
-            @RequestParam(required = false) String remarks,
-            @RequestParam String userId
-    ) {
-        return ResponseEntity.ok(service.stockIn(productId, qty, ref, remarks, userId));
+    public ResponseEntity<TransactionDto> stockIn(@RequestBody TransactionRequest request) {
+        TransactionDto tx = service.stockIn(
+                request.getProductId(),
+                request.getQuantity(),
+                request.getReferenceNumber(),
+                request.getRemarks(),
+                request.getUserId()
+        );
+        return ResponseEntity.ok(tx);
     }
-
     @PostMapping("/out")
     public ResponseEntity<TransactionDto> stockOut(
-            @RequestParam String productId,
-            @RequestParam int qty,
-            @RequestParam(required = false) String ref,
-            @RequestParam(required = false) String remarks,
-            @RequestParam String userId
+            @RequestBody TransactionRequest request
     ) {
-        return ResponseEntity.ok(service.stockOut(productId, qty, ref, remarks, userId));
+        TransactionDto tx = service.stockIn(
+                request.getProductId(),
+                request.getQuantity(),
+                request.getReferenceNumber(),
+                request.getRemarks(),
+                request.getUserId()
+        );
+        return ResponseEntity.ok(tx);
     }
-
+    @DeleteMapping("/{id}/cancel")
+    public ResponseEntity<String> cancelTransaction(@PathVariable String id) {
+        boolean canceled = service.cancelTransaction(id);
+        if (canceled) {
+            return ResponseEntity.ok("Transaction canceled successfully (status set to CANCELED).");
+        } else {
+            return ResponseEntity.badRequest().body("Cannot cancel transaction. Either it is older than 24h or already canceled.");
+        }
+    }
 }

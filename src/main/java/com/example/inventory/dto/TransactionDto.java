@@ -1,5 +1,6 @@
 package com.example.inventory.dto;
 
+import com.example.inventory.model.TransactionStatus;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -13,6 +14,6 @@ public class TransactionDto {
     private String remarks;
     private String userId;
     private LocalDateTime date;
-
+    private TransactionStatus status;
 
 }

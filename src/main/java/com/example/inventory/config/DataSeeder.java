@@ -6,6 +6,7 @@ import com.example.inventory.util.PasswordUtil;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -35,7 +36,7 @@ public class DataSeeder implements CommandLineRunner {
                 .email("john@dell.com")
                 .phone("1234567890")
                 .address("Texas, USA")
-                .createdAt(LocalDate.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Supplier hp = Supplier.builder()
@@ -44,7 +45,7 @@ public class DataSeeder implements CommandLineRunner {
                 .email("jane@hp.com")
                 .phone("9876543210")
                 .address("California, USA")
-                .createdAt(LocalDate.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         supplierRepo.saveAll(List.of(dell, hp));
@@ -58,8 +59,8 @@ public class DataSeeder implements CommandLineRunner {
                 .price(1500.0)
                 .quantity(10)
                 .supplierId(dell.getId())
-                .createdAt(LocalDate.now())
-                .updatedAt(LocalDate.now())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         Product printer = Product.builder()
@@ -70,8 +71,8 @@ public class DataSeeder implements CommandLineRunner {
                 .price(400.0)
                 .quantity(5)
                 .supplierId(hp.getId())
-                .createdAt(LocalDate.now())
-                .updatedAt(LocalDate.now())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         productRepo.saveAll(List.of(laptop, printer));

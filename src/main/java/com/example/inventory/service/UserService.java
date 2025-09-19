@@ -9,7 +9,9 @@ import com.example.inventory.util.PasswordUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -53,4 +55,15 @@ public class UserService {
     }
 
 
+    public List<UserDto> getAllUsers() {
+        return repo.findAll()
+                .stream()
+                .map(UserMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public UserDto getUserById(String id) {
+        Optional<User> user = repo.findById(id);
+        return user.isPresent() ? UserMapper.toDto(user.orElse(null)) : null;
+    }
 }

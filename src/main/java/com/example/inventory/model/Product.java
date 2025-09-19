@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Document(collection = "products")
 @Data
@@ -22,8 +23,8 @@ public class Product {
     private Integer quantity;
 
     private String supplierId; // Reference to Supplier document
-    private LocalDate expiryDate; // Optional (null if not applicable)
+   // private LocalDate expiryDate; // Optional (null if not applicable)
 
-    private LocalDate createdAt;
-    private LocalDate updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

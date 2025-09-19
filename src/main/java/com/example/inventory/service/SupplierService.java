@@ -37,7 +37,7 @@ public class SupplierService {
 
     public SupplierDto createSupplier(SupplierDto dto) {
         Supplier supplier = SupplierMapper.toEntity(dto);
-        supplier.setCreatedAt(LocalDate.from(LocalDateTime.now()));
+        supplier.setCreatedAt(LocalDateTime.now());
 
 
         Supplier saved = repo.save(supplier);

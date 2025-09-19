@@ -11,11 +11,13 @@ public class WebConfig implements WebMvcConfigurer {
     public WebConfig(JwtInterceptor jwtInterceptor) {
         this.jwtInterceptor = jwtInterceptor;
     }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(jwtInterceptor) .
-                addPathPatterns("/api/**") .
-                excludePathPatterns("/api/auth/**", "/api/**/options"); // exclude signup/login
+        registry.addInterceptor(jwtInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/auth/**", "/api/**/options"); // signup & login excluded
     }
 }
+
 

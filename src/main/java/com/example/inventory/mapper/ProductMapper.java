@@ -32,8 +32,8 @@ public class ProductMapper {
                 .price(dto.getPrice())
                 .quantity(dto.getQuantity())
                 .supplierId(dto.getSupplierId())
-                .createdAt(LocalDate.from(dto.getCreatedAt()))
-                .updatedAt(LocalDate.from(dto.getUpdatedAt()))
+                .createdAt(dto.getCreatedAt())
+                .updatedAt(dto.getUpdatedAt())
                 .build();
     }
 }

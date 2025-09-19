@@ -18,6 +18,7 @@ public class TransactionMapper {
         dto.setRemarks(transaction.getRemarks());
         dto.setUserId(transaction.getUserId());
         dto.setDate(transaction.getDate());
+        dto.setStatus(transaction.getStatus());
         return dto;
     }
 
@@ -33,6 +34,7 @@ public class TransactionMapper {
                 .remarks(dto.getRemarks())
                 .userId(dto.getUserId())
                 .date(dto.getDate())
+                .status(dto.getStatus() != null ? dto.getStatus() : null)
                 .build();
     }
 }

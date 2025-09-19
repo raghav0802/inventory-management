@@ -3,11 +3,14 @@ package com.example.inventory.service;
 import com.example.inventory.dto.TransactionDto;
 import com.example.inventory.exception.InsufficientStockException;
 import com.example.inventory.exception.ProductNotFoundException;
+import com.example.inventory.exception.TransactionNotFoundException;
 import com.example.inventory.mapper.TransactionMapper;
 import com.example.inventory.model.*;
 import com.example.inventory.repository.ProductRepository;
 import com.example.inventory.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +54,7 @@ public class TransactionService {
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
         product.setQuantity(product.getQuantity() + qty);
+        product.setUpdatedAt(LocalDateTime.now());
         productRepo.save(product);
 
         Transaction tx = Transaction.builder()
@@ -61,6 +65,7 @@ public class TransactionService {
                 .remarks(remarks)
                 .userId(userId)
                 .date(LocalDateTime.now())
+                .status(TransactionStatus.ACTIVE)
                 .build();
 
         return TransactionMapper.toDto(transactionRepo.save(tx));
@@ -76,6 +81,7 @@ public class TransactionService {
         }
 
         product.setQuantity(product.getQuantity() - qty);
+        product.setUpdatedAt(LocalDateTime.now());
         productRepo.save(product);
 
         Transaction tx = Transaction.builder()
@@ -86,6 +92,7 @@ public class TransactionService {
                 .remarks(remarks)
                 .userId(userId)
                 .date(LocalDateTime.now())
+                .status(TransactionStatus.ACTIVE)
                 .build();
 
         return TransactionMapper.toDto(transactionRepo.save(tx));
@@ -96,4 +103,41 @@ public class TransactionService {
                 .map(TransactionMapper::toDto)
                 .collect(Collectors.toList());
     }
+
+    public boolean cancelTransaction(String id) {
+        Transaction t = transactionRepo.findById(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+
+        Product product = productRepo.findById(t.getProductId())
+                .orElseThrow(() -> new ProductNotFoundException(t.getProductId()));
+
+        // Check if already canceled
+        if (t.getStatus() == TransactionStatus.CANCELED) {
+            return false; // Already canceled
+        }
+
+        // Check if transaction is within 24 hours
+        LocalDateTime now = LocalDateTime.now();
+        Duration diff = Duration.between(t.getDate(), now);
+
+        if (diff.toHours() < 24) {
+            // Reverse stock change depending on transaction type
+            if (t.getType() == TransactionType.IN) {
+                product.setQuantity(product.getQuantity() - t.getQuantity());
+            } else if (t.getType() == TransactionType.OUT) {
+                product.setQuantity(product.getQuantity() + t.getQuantity());
+            }
+
+            productRepo.save(product);
+
+            //Mark transaction as canceled
+            t.setStatus(TransactionStatus.CANCELED);
+            transactionRepo.save(t);
+
+            return true;
+        }
+        return false;
+    }
+
+
 }

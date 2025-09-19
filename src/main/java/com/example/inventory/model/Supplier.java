@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Document(collection = "suppliers")
 @Data
@@ -21,5 +22,5 @@ public class Supplier {
     private String phone;
     private String address;
 
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 }

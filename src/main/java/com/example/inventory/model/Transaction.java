@@ -22,4 +22,6 @@ public class Transaction {
     private String userId; // Who did the transaction
 
     private LocalDateTime date;
+
+    private TransactionStatus status;
 }

@@ -4,6 +4,7 @@ import com.example.inventory.dto.SupplierDto;
 import com.example.inventory.model.Supplier;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class SupplierMapper {
 
@@ -17,10 +18,8 @@ public class SupplierMapper {
         dto.setEmail(supplier.getEmail());
         dto.setPhone(supplier.getPhone());
         dto.setAddress(supplier.getAddress());
-
-        // Optional: add createdAt/updatedAt if your entity has them
         if (supplier.getCreatedAt() != null) {
-            dto.setCreatedAt(supplier.getCreatedAt().atStartOfDay());
+            dto.setCreatedAt(LocalDateTime.now());
         }
 
 
@@ -37,7 +36,7 @@ public class SupplierMapper {
                 .email(dto.getEmail())
                 .phone(dto.getPhone())
                 .address(dto.getAddress())
-                .createdAt(LocalDate.from(dto.getCreatedAt()))
+                .createdAt(dto.getCreatedAt())
                 .build();
     }
 }
