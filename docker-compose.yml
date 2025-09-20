@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: bitnami/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      # KRaft mode (no Zookeeper required)
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      - inventory-net
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - inventory-net
+
+  inventory-service:
+    build: .
+    container_name: inventory-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: "mongodb+srv://Raghav0802:raghav@cluster0.l1mrrhj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+      JWT_SECRET: "your-very-strong-secret-key-1234567890"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    depends_on:
+      - kafka
+    networks:
+      - inventory-net
+
+volumes:
+  kafka_data:
+
+networks:
+  inventory-net:
+    driver: bridge

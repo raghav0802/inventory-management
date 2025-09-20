@@ -4,11 +4,14 @@ import com.example.inventory.dto.TransactionDto;
 import com.example.inventory.exception.InsufficientStockException;
 import com.example.inventory.exception.ProductNotFoundException;
 import com.example.inventory.exception.TransactionNotFoundException;
+import com.example.inventory.kafka.TransactionEvent;
+import com.example.inventory.mapper.TransactionEventMapper;
 import com.example.inventory.mapper.TransactionMapper;
 import com.example.inventory.model.*;
 import com.example.inventory.repository.ProductRepository;
 import com.example.inventory.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -20,10 +23,18 @@ import java.util.stream.Collectors;
 public class TransactionService {
     private final TransactionRepository transactionRepo;
     private final ProductRepository productRepo;
+    private final KafkaTemplate<String, TransactionEvent> kafkaTemplate;
 
-    public TransactionService(TransactionRepository transactionRepo, ProductRepository productRepo) {
+    private static final String TOPIC = "transactions";
+
+    public TransactionService(
+            TransactionRepository transactionRepo,
+            ProductRepository productRepo,
+            KafkaTemplate<String, TransactionEvent> kafkaTemplate
+    ) {
         this.transactionRepo = transactionRepo;
         this.productRepo = productRepo;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     public List<TransactionDto> getAll() {
@@ -68,7 +79,15 @@ public class TransactionService {
                 .status(TransactionStatus.ACTIVE)
                 .build();
 
-        return TransactionMapper.toDto(transactionRepo.save(tx));
+        Transaction savedTx = transactionRepo.save(tx);
+
+        //  Publish Kafka event
+        TransactionEvent event = TransactionEventMapper.toEvent(tx, null);
+        kafkaTemplate.send("transaction-events", event);
+
+        return TransactionMapper.toDto(tx);
+
+
     }
 
     // Handle stock OUT (reduce quantity)
@@ -95,7 +114,12 @@ public class TransactionService {
                 .status(TransactionStatus.ACTIVE)
                 .build();
 
-        return TransactionMapper.toDto(transactionRepo.save(tx));
+        Transaction savedTx = transactionRepo.save(tx);
+
+        TransactionEvent event = TransactionEventMapper.toEvent(tx, null);
+        kafkaTemplate.send("transaction-events", event);
+
+        return TransactionMapper.toDto(tx);
     }
     public List<TransactionDto> getTransactionsByUserAndDateRange(String userId, LocalDateTime from, LocalDateTime to) {
         return transactionRepo.findByUserIdAndDateBetween(userId, from, to)
@@ -133,6 +157,13 @@ public class TransactionService {
             //Mark transaction as canceled
             t.setStatus(TransactionStatus.CANCELED);
             transactionRepo.save(t);
+
+
+
+            // send a specific Kafka cancellation event
+
+            TransactionEvent event = TransactionEventMapper.toEvent(t, "CANCELED");
+            kafkaTemplate.send("transaction-events", event);
 
             return true;
         }
