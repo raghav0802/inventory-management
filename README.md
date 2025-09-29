@@ -1,57 +1,72 @@
-# Inventory Management Service
+# 📦 Inventory Management Service
 
-Inventory Management Service is a Spring Boot microservice responsible for managing product inventory, producing Kafka events, and providing secure access through JWT-based authentication.
-
----
-
-## Features
-
-- Manage inventory transactions: CREATE, UPDATE, CANCEL  
-- Produce transaction events to Kafka topics (`transactions`)  
-- Secure authentication using JWT tokens  
-- Password hashing with BCrypt before storing in MongoDB  
-- Dockerized for easy deployment  
+The **Inventory Management Service** is a Spring Boot microservice responsible for managing product inventory, producing Kafka events, indexing/searching products in **Elasticsearch**, and securing access with JWT-based authentication. It integrates MongoDB for data persistence, Elasticsearch for fast product search, and supports password hashing for user security.
 
 ---
 
-## Prerequisites
+## 🚀 Features
 
-- Java 17 or higher  
-- Maven 3.9+  
-- Docker & Docker Compose  
-- MongoDB Atlas or local MongoDB instance  
+* Manage inventory transactions: **CREATE, UPDATE, CANCEL**
+* Produce transaction events to Kafka (`transactions` topic)
+* **Elasticsearch integration** for full-text and category-based product search
+* JWT authentication for secure access
+* Password hashing with **BCrypt** before storing in MongoDB
+* Dockerized setup with **Kafka**, **Kafka-UI**, and **Elasticsearch**
 
 ---
 
-## Setup & Running
+## 🛠️ Prerequisites
 
-1.  **Clone the repository:**
+* Java 17+
+* Maven 3.9+
+* Docker & Docker Compose
+* MongoDB Atlas (or local MongoDB)
+* Elasticsearch 8.x (via Docker or local installation)
 
-    ```bash
-    git clone <your-repo-url>
-    cd inventory-management
-    ```
+---
 
-2.  **Build the project:**
+## ⚙️ Setup & Running
 
-    ```bash
-    mvn clean install
-    ```
+### 1️⃣ Clone the repository
 
-3.  **Run locally:**
+```bash
+git clone <your-repo-url>
+cd inventory-management
+```
 
-    ```bash
-    mvn spring-boot:run
-    ```
+### 2️⃣ Build the project
 
-    The service runs on port 8080 by default.
+```bash
+mvn clean install
+```
 
-### Docker Setup
+### 3️⃣ Run locally
 
-#### Docker Compose configuration example:
+```bash
+mvn spring-boot:run
+```
+
+By default, the service runs on **port 8080**.
+
+---
+
+## 🐳 Docker Setup
+
+### docker-compose.yml (excerpt)
 
 ```yaml
 services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: inventory-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    networks:
+      - inventory-net
+
   kafka:
     image: bitnami/kafka:3.7.0
     container_name: inventory-kafka
@@ -72,19 +87,6 @@ services:
     networks:
       - inventory-net
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: inventory-kafka-ui
-    ports:
-      - "8081:8080"
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=inventory-kafka:9092
-    depends_on:
-      - kafka
-    networks:
-      - inventory-net
-
   inventory-service:
     build: .
     container_name: inventory-service
@@ -92,10 +94,12 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATA_MONGODB_URI: "<Your MongoDB URI>"
+      SPRING_ELASTICSEARCH_URIS: "http://inventory-elasticsearch:9200"
       JWT_SECRET: "<your-secret-key>"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "inventory-kafka:9092"
     depends_on:
       - kafka
+      - elasticsearch
     networks:
       - inventory-net
 
@@ -105,61 +109,90 @@ volumes:
 networks:
   inventory-net:
     driver: bridge
-Run services:
-code
-Bash
-docker-compose up -d
-Kafka Testing
-Exec into Kafka container:
-code
-Bash
-docker exec -it inventory-kafka bash
-Create a topic:
-code
-Bash
-kafka-topics.sh --bootstrap-server localhost:9092 --create --topic transactions --partitions 1 --replication-factor 1
-Produce a test message:
-code
-Bash
-kafka-console-producer.sh --broker-list localhost:9092 --topic transactions
-Example message:
-code
-JSON
-{"transactionId":"123","productId":"p1","userId":"u1","quantity":5,"status":"CREATED"}
-Consume messages (optional):
-code
-Bash
-kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic transactions --from-beginning
-API Endpoints
-Method	Endpoint	Description
-POST	/transactions	Create a new inventory transaction
-GET	/transactions	List all transactions
-GET	/transactions/{id}	Get transaction by ID
-PUT	/transactions/{id}	Update a transaction
-DELETE	/transactions/{id}	Cancel a transaction
-POST	/auth/register	Register a new user
-POST	/auth/login	Login and receive JWT token
-Security
-JWT Authentication
-All endpoints (except /auth/register and /auth/login) require a valid JWT token.
-JWT token should be included in the Authorization header:
-code
-Code
+```
+
+### Run containers
+
+```bash
+docker compose up -d
+```
+
+---
+
+## 🔎 Elasticsearch Integration
+
+* Products are indexed into the `products` index automatically.
+* Example document:
+
+```json
+{
+  "id": "12345",
+  "name": "Sony Electronics 2428",
+  "category": "Electronics",
+  "price": 500,
+  "description": "High-quality Electronics product #2428"
+}
+```
+
+* Example search query (category = Electronics):
+
+```bash
+curl -X GET "http://localhost:9200/products/_search" -H 'Content-Type: application/json' -d '{"query":{"match":{"category":"Electronics"}}}'
+```
+
+* Fast keyword search (all fields):
+
+```bash
+curl -X GET "http://localhost:9200/products/_search" -H 'Content-Type: application/json' -d '{"query":{"multi_match":{"query":"Shoes","fields":["name","description","category"]}}}'
+```
+
+---
+
+## 🔗 API Endpoints
+
+| Method | Endpoint             | Description                       |
+| ------ | -------------------- | --------------------------------- |
+| POST   | `/transactions`      | Create new transaction            |
+| GET    | `/transactions`      | List all transactions             |
+| GET    | `/transactions/{id}` | Get transaction by ID             |
+| PUT    | `/transactions/{id}` | Update a transaction              |
+| DELETE | `/transactions/{id}` | Cancel a transaction              |
+| POST   | `/auth/register`     | Register a new user               |
+| POST   | `/auth/login`        | Login and receive JWT             |
+| GET    | `/products/search`   | Search products via Elasticsearch |
+
+---
+
+## 🔐 Security
+
+### JWT Authentication
+
+* All endpoints (except `/auth/register` and `/auth/login`) require a valid JWT.
+* Send token in the `Authorization` header:
+
+```
 Authorization: Bearer <token>
-Password Hashing
-User passwords are never stored in plain text.
-BCrypt hashing is used:
-code
-Java
-BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-String hashedPassword = encoder.encode(plainPassword);
-Hashed password is stored in MongoDB for secure authentication.
-Configuration
-application.properties or environment variables:
-code
-Properties
+```
+
+### Password Hashing
+
+* User passwords are **never stored in plain text**.
+* Stored securely using **BCrypt hashing**.
+
+---
+
+## ⚙️ Configuration
+
+`application.properties` or environment variables:
+
+```properties
 spring.data.mongodb.uri=<MongoDB URI>
 spring.kafka.bootstrap-servers=inventory-kafka:9092
+spring.elasticsearch.uris=http://inventory-elasticsearch:9200
 jwt.secret=<your-secret-key>
-code
-code
+```
+
+---
+
+✅ The service now supports **real-time search with Elasticsearch**, making it easy to query products by name, category, or description.
+
