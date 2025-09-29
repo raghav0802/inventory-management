@@ -1,5 +1,7 @@
+version: "3.8"
+
 services:
-  # Kafka Broker (Inventory Management owns it)
+  # Kafka Broker
   kafka:
     image: bitnami/kafka:3.7.0
     container_name: inventory-kafka
@@ -7,7 +9,6 @@ services:
       - "9092:9092"
       - "9094:9094"
     environment:
-      # KRaft mode (no Zookeeper)
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_PROCESS_ROLES=broker,controller
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:9094
@@ -21,7 +22,7 @@ services:
     networks:
       - inventory-net
 
-  # Kafka UI (optional)
+  # Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: inventory-kafka-ui
@@ -35,7 +36,7 @@ services:
     networks:
       - inventory-net
 
-  # Inventory Management (Producer)
+  # Inventory Service (Spring Boot)
   inventory-service:
     build: .
     container_name: inventory-service
@@ -47,8 +48,53 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "inventory-kafka:9092"
     depends_on:
       - kafka
+      - elasticsearch
     networks:
       - inventory-net
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: inventory-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - inventory-net
+
+  # Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: inventory-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - inventory-net
+
+
+
+    # Logstash
+#  logstash:
+#      image: docker.elastic.co/logstash/logstash:8.15.0
+#      container_name: inventory-logstash
+#      ports:
+#        - "5044:5044"   # Beats input
+#        - "9600:9600"   # Monitoring API
+#      volumes:
+#        - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+#      environment:
+#        - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+#      depends_on:
+#        - kafka
+#        - elasticsearch
+#      networks:
+#        - inventory-net
 
 volumes:
   kafka_data:
@@ -57,4 +103,3 @@ networks:
   inventory-net:
     name: inventory-net
     external: true
-

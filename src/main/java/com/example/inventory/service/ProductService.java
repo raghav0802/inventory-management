@@ -5,7 +5,7 @@ import com.example.inventory.mapper.ProductMapper;
 import com.example.inventory.model.Product;
 import com.example.inventory.repository.ProductRepository;
 import org.springframework.stereotype.Service;
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -14,9 +14,14 @@ import java.util.stream.Collectors;
 @Service
 public class ProductService {
     private final ProductRepository repo;
+   // private ProductEventProducer productEventProducer;
 
-    public ProductService(ProductRepository repo) {
-        this.repo = repo;
+    private final ProductSearchService searchService;  // Elasticsearch sync
+
+    public ProductService(ProductRepository repo, ProductSearchService searchService) {
+        this.repo= repo;
+        this.searchService = searchService;
+      //  this.productEventProducer=productEventProducer;
     }
 
     // Get all products
@@ -44,6 +49,7 @@ public class ProductService {
         product.setUpdatedAt(now);
 
         Product saved = repo.save(product);
+        searchService.indexProduct(saved);
         return ProductMapper.toDto(saved);
     }
 
@@ -60,6 +66,7 @@ public class ProductService {
             existing.setSupplierId(productDto.getSupplierId());
             existing.setUpdatedAt(LocalDateTime.now());
             Product updated = repo.save(existing);
+            searchService.indexProduct(updated);
             return ProductMapper.toDto(updated);
         });
     }
@@ -67,6 +74,7 @@ public class ProductService {
     public boolean deleteProduct(String id) {
         if (repo.existsById(id)) {
             repo.deleteById(id);
+            searchService.deleteFromIndex(id);
             return true;
         }
         return false;
